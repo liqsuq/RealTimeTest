@@ -1,0 +1,51 @@
+Handle fuzzy clockevent multipliers.
+
+A multiplier that converts nsecs to too many hardware
+specific ticks will make the hardware timer (usually
+the local APIC timer) fire late.  This late firing will
+act like a PDL to applications waiting for that event.
+This is Bad for realtime systems.
+
+A multiplier that converts nsecs to too few ticks will
+fire early.  This is bad in the sense that we get a
+NOP interrupt which might be disturbing a real time
+application.  But that interrrupt will notice that it is
+early and reprogram itself to fire again, but this time,
+being closer to the desired time, its aim will be more
+accurate.
+
+Thus, of the two evils, it is better to be early than to
+be late. Much better.
+
+So this patch scales back the multiplier a bit, for timers
+that are to fire in the far future, in the hopes that
+this will keep it from firing late on a greater percentage
+of systems.
+
+This patch scales the multiplier back by a certain,
+constant parts-per-million (ppm) value. What we should be
+doing instead is periodically recalibrating the multiplier
+based on a measurement of when programmed interrupts have
+actually occured in the recent past.
+
+Signed-off-by: Joe Korty <joe.korty@ccur.com>
+
+Index: b/kernel/time/clockevents.c
+===================================================================
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -238,6 +238,14 @@ int clockevents_program_event(struct clo
+ 	delta = min(delta, (int64_t) dev->max_delta_ns);
+ 	delta = max(delta, (int64_t) dev->min_delta_ns);
+ 
++	/*
++	 * Shorten the multiplier by about 8000 ppm if the timer is to fire
++	 * in the far future. Rationale: we don't want it firing late, that
++	 * looks like a PDL to applications. But we handle early just fine.
++	 */
++	if (delta > 500 * NSEC_PER_USEC)
++		delta -= (delta >> 7);
++
+ 	clc = ((unsigned long long) delta * dev->mult) >> dev->shift;
+ 	rc = dev->set_next_event((unsigned long) clc, dev);
+ 
