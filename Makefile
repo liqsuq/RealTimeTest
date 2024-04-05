@@ -1,16 +1,18 @@
-BUILD := affinity sched semaphore shm_open shm sigqueue msgqueue aio rfile loop timer nanosleep tswitch pdl memtest disk_test timer_loop clock
+SUBDIRS := affinity sched semaphore shm_open shm sigqueue msgqueue aio rfile loop timer nanosleep tswitch pdl memtest disk_test timer_loop clock
 TESTD := affinity sched semaphore shm_open shm sigqueue msgqueue aio rfile loop timer nanosleep tswitch pdl memtest disk_test
 RCIMD := timer tswitch
 
 REDHAWK := $(shell if [ -f /etc/redhawk-release ]; then echo 1; else echo 0; fi)
 VERSION := $(shell fgrep "VERSION" include/rttest.h|cut -d' ' -f3)
 
-all:
-	@echo "##### Making Files #####"
-	@for i in $(BUILD); do echo "$$i"; $(MAKE) -s $@ -C $$i; done;
-test:
+.PHONY: all test rcim clean spec $(SUBDIRS)
+
+all: $(SUBDIRS)
+test: spec $(TESTD)
+rcim: spec $(RCIMD)
+clean: $(SUBDIRS)
+spec:
 	@echo "##### System Info #####"
-	@echo ""
 	@echo "uname -r:"
 	@uname -r
 	@echo ""
@@ -22,11 +24,8 @@ ifeq ("$(REDHAWK)", "1")
 	@gather
 	@echo ""
 endif
-	@echo "RedHawkTest:"
+	@echo "RealTimeTest:"
 	@echo "version $(VERSION)"
-	@for i in $(TESTD); do echo ""; echo "##### $$i #####"; echo ""; $(MAKE) -s $@ -C $$i; done;
-rcim:
-	@for i in $(RCIMD); do echo ""; echo "##### $$i #####"; echo ""; $(MAKE) -s $@ -C $$i; done;
-clean:
-	@echo "##### Clean files #####"
-	@for i in $(BUILD); do echo "$$i"; $(MAKE) -s $@ -C $$i; done;
+	@echo ""
+$(SUBDIRS):
+	$(MAKE) -s -C $@ $(MAKECMDGOALS)
