@@ -14,6 +14,7 @@ test: spec $(TESTD)
 rcim: spec $(RCIMD)
 clean: $(SUBDIRS)
 wipeout: clean
+	rm -rf deb rpm root
 
 spec:
 	@echo "##### System Info #####"
@@ -131,5 +132,6 @@ rpm:
 deb:
 	make install DESTDIR=${PWD}/root
 	cp -r DEBIAN root/
+	mkdir deb
 	fakeroot dpkg-deb --build root deb
 	rm -rf root

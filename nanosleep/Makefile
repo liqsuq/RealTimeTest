@@ -18,3 +18,5 @@ clean:
 	$(RM) -f $(BINARY) $(OBJECT) $(TEMP)
 test: $(BINARY) $(SCRIPT)
 	-@./$(SCRIPT)
+install: all
+wipeout: clean

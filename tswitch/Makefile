@@ -20,3 +20,5 @@ test: $(BINARY) $(SCRIPT)
 	-@./$(SCRIPT)
 rcim: $(BINARY) $(SCRIPT)
 	-@./$(SCRIPT) -- -r
+install: all
+wipeout: clean
